@@ -1,5 +1,6 @@
 import tkinter as tk
 import random
+from tkinter import filedialog
 
 #Működés megéréséhez hagytam bent a saját kommentjeimet.
 
