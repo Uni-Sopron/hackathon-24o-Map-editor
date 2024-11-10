@@ -151,6 +151,28 @@ def save_board(self):
             for row in self.grid:
                 file.write(' '.join(map(str, row)) + '\n')
 
+def mirror_vertical(self):
+    self.grid = [row[::-1] for row in self.grid]
+    self.create_table()
+
+def mirror_horizontal(self):
+    self.grid = self.grid[::-1]
+    self.create_table()
+
+def rotate_90(self):
+    rows, cols = len(self.grid[0]), len(self.grid)
+    rotated_grid = [[self.grid[cols - j - 1][i] for j in range(cols)] for i in range(rows)]
+    self.grid = rotated_grid
+    self.board_size = (rows, cols)
+    self.create_board()
+
+self.mirror_v_button = tk.Button(root, text="Fuggoleges", command=self.mirror_vertical)
+self.mirror_v_button.pack()
+self.mirror_h_button = tk.Button(root, text="Vizszintes", command=self.mirror_horizontal)
+self.mirror_h_button.pack()
+self.rotate_button = tk.Button(root, text="90 fokos", command=self.rotate_90)
+self.rotate_button.pack()
+
 
 if __name__ == "__main__":
     root = tk.Tk()
