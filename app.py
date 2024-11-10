@@ -140,6 +140,18 @@ class GameBoard:
     ##### függvény vége #####
     
 
+# GUI mentés
+self.save_button = tk.Button(root, text="save board", command=self.save_board)
+self.save_button.pack()
+
+def save_board(self):
+    file_path = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("Text files", "*.txt")])
+    if file_path:
+        with open(file_path, 'w') as file:
+            for row in self.grid:
+                file.write(' '.join(map(str, row)) + '\n')
+
+
 if __name__ == "__main__":
     root = tk.Tk()
     app = GameBoard(root)
