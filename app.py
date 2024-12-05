@@ -7,7 +7,7 @@ class GameBoard:
     def __init__(self, root):
         self.root = root
         self.root.title("Pálya Generáló")
-
+ 
         self.size_label = tk.Label(root, text="Pálya mérete (sor x oszlop):")
         self.size_label.pack()
 
