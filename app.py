@@ -43,16 +43,51 @@ class MainPage:
             self.size_label.config(text="Pozitív egész számokat adj meg!")
 
     def load_board_from_server(self):
-        root = tk.Tk()
-        app = GameBoard(root, self)
-        app.load_board_from_server()
-        root.mainloop()
+        try:
+            url = "szervercim"
+            response = requests.get(url)
+            response.raise_for_status()
+            data = response.text
+            new_grid = []
+            for line in data.strip().split("\n"):
+                new_grid.append(list(map(int, line.split())))
+            rows, cols = len(new_grid), len(new_grid[0])
+            if rows <= 0 or cols <= 0:
+                raise ValueError("Hibás pályaadat.")
+            self.root.destroy()
+            root = tk.Tk()
+            app = GameBoard(root, self)
+            app.create_board(rows, cols)
+            app.grid = new_grid
+            app.create_table()
+            root.mainloop()
+        except Exception as e:
+            self.size_label.config(text=f"Hiba a szerverről való betöltéskor: {e}")
 
     def load_board_from_file(self):
-        root = tk.Tk()
-        app = GameBoard(root, self)
-        app.load_board_from_file()
-        root.mainloop()
+        try:
+            file_path = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
+            if not file_path:
+                return
+
+            with open(file_path, 'r') as file:
+                data = file.readlines()
+            new_grid = []
+            for line in data:
+                new_grid.append(list(map(int, line.strip().split())))
+            rows, cols = len(new_grid), len(new_grid[0])
+            if any(len(row) != cols for row in new_grid): 
+                raise ValueError("Érvénytelen pálya.")
+            self.root.destroy()
+            root = tk.Tk()
+            app = GameBoard(root, self)
+            app.create_board(rows, cols)
+            app.grid = new_grid
+            app.create_table()
+            root.mainloop()
+
+        except Exception as e:
+            self.size_label.config(text=f"Hiba a fájl betöltésekor: {e}")
 
     def run(self):
         self.root.mainloop()
@@ -78,51 +113,6 @@ class GameBoard:
         self.mirror_h_button = None
         self.rotate_button = None
 
-    def load_board_from_server(self):
-        try:
-            url = "szervercim"  
-            response = requests.get(url)
-            response.raise_for_status()  
-            data = response.text
-            new_grid = []
-            for line in data.strip().split("\n"):
-                new_grid.append(list(map(int, line.split())))
-            rows, cols = len(new_grid), len(new_grid[0])
-            if rows <= 0 or cols <= 0:
-                raise ValueError("Hibás pályaadat.")
-
-            self.grid = new_grid
-            self.board_size = (rows, cols)
-            self.canvas.config(width=cols * self.cell_size, height=rows * self.cell_size)
-            self.create_table()
-        except Exception as e:
-            self.main_page.size_label.config(text=f"Hiba a szerverrel: {e}")
-
-    def load_board_from_file(self):
-        try:
-            file_path = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
-            if not file_path: 
-                return
-
-            with open(file_path, 'r') as file:
-                data = file.readlines()
-            new_grid = []
-            for line in data:
-                new_grid.append(list(map(int, line.strip().split())))
-            rows, cols = len(new_grid), len(new_grid[0])
-            if any(len(row) != cols for row in new_grid): 
-                raise ValueError("Érvénytelen pálya.")
-            self.grid = new_grid
-            self.board_size = (rows, cols)
-            if self.canvas:
-                self.canvas.destroy()
-            self.canvas = tk.Canvas(self.root, width=cols * self.cell_size, height=rows * self.cell_size)
-            self.canvas.pack()
-            self.create_table()
-        except Exception as e:
-            self.main_page.size_label.config(text=f"Hiba a fájl betöltésekor: {e}")
-
-
     def create_board(self, rows, cols):
         try:
             if rows <= 0 or cols <= 0:
@@ -139,24 +129,24 @@ class GameBoard:
             if self.random_button:
                 self.random_button.destroy()
             self.random_button = tk.Button(self.root, text="Random falak", command=self.add_random_walls)
-            self.random_button.pack()
+            self.random_button.pack(pady=10)
             self.canvas.bind("<Button-1>", self.reserve_block)
 
             if not self.save_button:
                 self.save_button = tk.Button(self.root, text="Mentés", command=self.save_board)
-                self.save_button.pack()
+                self.save_button.pack(pady=10)
             
             if not self.mirror_v_button:
                 self.mirror_v_button = tk.Button(self.root, text="Függőleges tükrözés", command=self.mirror_vertical)
-                self.mirror_v_button.pack()
+                self.mirror_v_button.pack(pady=10)
 
             if not self.mirror_h_button:
                 self.mirror_h_button = tk.Button(self.root, text="Vízszintes tükrözés", command=self.mirror_horizontal)
-                self.mirror_h_button.pack()
+                self.mirror_h_button.pack(pady=10)
 
             if not self.rotate_button:
                 self.rotate_button = tk.Button(self.root, text="90 fokos forgatás", command=self.rotate_90)
-                self.rotate_button.pack()
+                self.rotate_button.pack(pady=10)
                 
             self.back_button = tk.Button(self.root, text="Vissza a főoldalra", command=self.back_to_main_page)
             self.back_button.pack(pady=(10, 0))           
