@@ -3,25 +3,68 @@ import random
 from tkinter import filedialog
 import requests
 
-class GameBoard:
+
+class MainPage:
     def __init__(self, root):
         self.root = root
-        self.root.title("Pálya Generáló")
- 
+        self.root.title("Főoldal")
+        self.root.geometry("400x300")
+
         self.size_label = tk.Label(root, text="Pálya mérete (sor x oszlop):")
-        self.size_label.pack()
-
         self.rows_entry = tk.Entry(root)
-        self.rows_entry.pack()
         self.rows_entry.insert(0, "10")
-
         self.cols_entry = tk.Entry(root)
-        self.cols_entry.pack()
         self.cols_entry.insert(0, "10")
-        ##### pálya létrehozása blokk         #####
-        #### gomb elhelyezése + függvény hivás ####
-        self.set_size_button = tk.Button(root, text="Pálya létrehozása", command=self.create_board)
-        self.set_size_button.pack()
+        self.set_size_button = tk.Button(root, text="Pálya létrehozása", command=self.create_new_board)
+        self.load_button = tk.Button(self.root, text="Pálya betöltése szerverről", command=self.load_board_from_server)
+        self.load_file_button = tk.Button(self.root, text="Pálya betöltése fájlból", command=self.load_board_from_file)
+        self.exit_button = tk.Button(root, text="Kilépés", command=self.shutdown)
+        
+        self.size_label.pack(pady=10)
+        self.rows_entry.pack(pady=10)
+        self.cols_entry.pack(pady=10)
+        self.set_size_button.pack(pady=10)
+        self.load_button.pack(pady=10)
+        self.load_file_button.pack(pady=10)
+        self.exit_button.pack(pady=10)
+
+    def create_new_board(self):
+        try:
+            rows = int(self.rows_entry.get())
+            cols = int(self.cols_entry.get())
+            if rows <= 0 or cols <= 0:
+                raise ValueError
+            self.root.destroy()
+            root = tk.Tk()
+            app = GameBoard(root, self)
+            app.create_board(rows, cols)
+            root.mainloop()
+        except ValueError:
+            self.size_label.config(text="Pozitív egész számokat adj meg!")
+
+    def load_board_from_server(self):
+        root = tk.Tk()
+        app = GameBoard(root, self)
+        app.load_board_from_server()
+        root.mainloop()
+
+    def load_board_from_file(self):
+        root = tk.Tk()
+        app = GameBoard(root, self)
+        app.load_board_from_file()
+        root.mainloop()
+
+    def run(self):
+        self.root.mainloop()
+        
+    def shutdown(self) -> None:
+        self.root.destroy()
+
+class GameBoard:
+    def __init__(self, root, main_page):
+        self.root = root
+        self.main_page = main_page
+        self.root.title("Pálya Generáló")
 
         self.canvas = None
         self.board_size = (0, 0)
@@ -34,11 +77,7 @@ class GameBoard:
         self.mirror_v_button = None
         self.mirror_h_button = None
         self.rotate_button = None
-        self.load_button = tk.Button(self.root, text="Pálya betöltése szerverről", command=self.load_board_from_server)
-        self.load_button.pack()
-        self.load_file_button = tk.Button(self.root, text="Pálya betöltése fájlból", command=self.load_board_from_file)
-        self.load_file_button.pack()
-        
+
     def load_board_from_server(self):
         try:
             url = "szervercim"  
@@ -57,7 +96,7 @@ class GameBoard:
             self.canvas.config(width=cols * self.cell_size, height=rows * self.cell_size)
             self.create_table()
         except Exception as e:
-            self.size_label.config(text=f"Hiba a szerverrel: {e}")
+            self.main_page.size_label.config(text=f"Hiba a szerverrel: {e}")
 
     def load_board_from_file(self):
         try:
@@ -81,13 +120,11 @@ class GameBoard:
             self.canvas.pack()
             self.create_table()
         except Exception as e:
-            self.size_label.config(text=f"Hiba a fájl betöltésekor: {e}")
+            self.main_page.size_label.config(text=f"Hiba a fájl betöltésekor: {e}")
 
 
-    def create_board(self):
+    def create_board(self, rows, cols):
         try:
-            rows = int(self.rows_entry.get())
-            cols = int(self.cols_entry.get())
             if rows <= 0 or cols <= 0:
                 raise ValueError
             self.board_size = (rows, cols)
@@ -120,15 +157,13 @@ class GameBoard:
             if not self.rotate_button:
                 self.rotate_button = tk.Button(self.root, text="90 fokos forgatás", command=self.rotate_90)
                 self.rotate_button.pack()
-
+                
+            self.back_button = tk.Button(self.root, text="Vissza a főoldalra", command=self.back_to_main_page)
+            self.back_button.pack(pady=(10, 0))           
+                
         except ValueError:
-            self.size_label.config(text="Pozitív egész számokat adj meg!")
-            
-##### pálya lértehozása függvény               #####
-    #### row + col -> sor és oszlop                 ####
-    ### x1 + y1 bal felső - x2 + y2 jobb alsó sarok  ###
-    ## GameBoard-ból szedi ki a foglalt szint         ##
-    # create_rectangle koordináták alapján kocka 
+            self.main_page.size_label.config(text="Pozitív egész számokat adj meg!")
+
     def create_table(self):
         for row in range(self.board_size[0]):
             for col in range(self.board_size[1]):
@@ -140,10 +175,7 @@ class GameBoard:
                 if self.grid[row][col] == 1:
                     color = self.obstacle_color
                 self.canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline="white")
-##### random falak generálása függvény     #####
-    #### foglalások resetelése                  ####
-    ### random falak testreszabása               ###
-    ## num_walls -> foglalás random testreszabása #
+
     def add_random_walls(self):
         self.clear_grid()
         num_walls = random.randint(1, (self.board_size[0] * self.board_size[1]) // 2)
@@ -156,11 +188,6 @@ class GameBoard:
                     break
         self.create_table()
 
-##### foglalás kattra függvény     #####
-    #### event lesz a katt koordinátája ####
-    ### koordináta ellenőrzés            ###
-    ## foglalás érték megforditás         ##
-    # tábla létrehozása                    #
     def reserve_block(self, event):
         x, y = event.x, event.y
         row = y // self.cell_size
@@ -194,8 +221,15 @@ class GameBoard:
         self.board_size = (cols, rows)  
         self.canvas.config(width=cols * self.cell_size, height=rows * self.cell_size)
         self.create_table()
+    
+    def back_to_main_page(self):
+        self.root.destroy()
+        new_root = tk.Tk()
+        main_page = MainPage(new_root)
+        main_page.run()
+
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = GameBoard(root)
-    root.mainloop()
+    main_page = MainPage(root)
+    main_page.run()
